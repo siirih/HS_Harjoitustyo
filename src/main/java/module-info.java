@@ -3,6 +3,6 @@ module com.example.hs_harjoitustyo {
     requires javafx.fxml;
 
 
-    opens com.example.hs_harjoitustyo to javafx.fxml;
+    opens elainkysely to javafx.fxml;
     exports elainkysely;
 }
