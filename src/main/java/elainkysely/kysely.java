@@ -20,7 +20,7 @@ import java.util.Arrays;
 /** Kysely, joka antaa kayttajan vastausten perusteella kayttajalle lemmikki ehdotuksen.
  * @author Siiri Harinen
  * @author siirihar@student.uef.fi
- * @version 1.0 2023/03/22
+ * @version 2.0 2023/04/19
  */
 public class kysely extends Application{
     /**VBox, johon tehdaan muutoksia koko ohjelman ajan*/
@@ -29,10 +29,6 @@ public class kysely extends Application{
     private Font fontti = Font.font("Times New Roman", FontWeight.BOLD, FontPosture.REGULAR, 20);
     /** Taulukko, johon kayttajan valinnat sijoitetaan.*/
     private String[] valinnat = new String[5];
-    /** Taulukko, johon luetaan tiedostosta saatu taulukko.*/
-    private String[] finalvalinnat = new String[5];
-    /** Laskee kysymysten maaran*/
-    private int kohta=0;
     /** Sivunumero*/
     private int sivu=1;
     /** Olioluokka asettaa kayttajan nimen, ian ja nimiehdotuksen lemmikille*/
@@ -128,7 +124,6 @@ public class kysely extends Application{
             vboksi.getChildren().remove(pick1);
             vboksi.getChildren().remove(sivu2);
             valinnat[0] = "A";
-            kohta++;
             getQ2();
         });
         //Question 1 Country (B)
@@ -138,7 +133,6 @@ public class kysely extends Application{
             vboksi.getChildren().remove(pick1);
             vboksi.getChildren().remove(sivu2);
             valinnat[0] = "B";
-            kohta++;
             getQ2();
         });
 
@@ -181,7 +175,6 @@ public class kysely extends Application{
             vboksi.getChildren().remove(pick2);
             vboksi.getChildren().remove(sivu3);
             valinnat[1] = "A";
-            kohta++;
             getQ3();
         });
         //Question 2 Not much (B)
@@ -191,7 +184,6 @@ public class kysely extends Application{
             vboksi.getChildren().remove(pick2);
             vboksi.getChildren().remove(sivu3);
             valinnat[1] = "B";
-            kohta++;
             getQ3();
         });
     }
@@ -233,7 +225,6 @@ public class kysely extends Application{
             vboksi.getChildren().remove(pick3);
             vboksi.getChildren().remove(sivu4);
             valinnat[2] = "A";
-            kohta++;
             getQ4();
         });
         //Question 3 no (B)
@@ -243,7 +234,6 @@ public class kysely extends Application{
             vboksi.getChildren().remove(pick3);
             vboksi.getChildren().remove(sivu4);
             valinnat[2] = "B";
-            kohta++;
             getQ4();
         });
     }
@@ -285,7 +275,6 @@ public class kysely extends Application{
             vboksi.getChildren().remove(pick4);
             vboksi.getChildren().remove(sivu5);
             valinnat[3] = "A";
-            kohta++;
             getQ5();
         });
         //Question 4 Not that much (B)
@@ -295,7 +284,6 @@ public class kysely extends Application{
             vboksi.getChildren().remove(pick4);
             vboksi.getChildren().remove(sivu5);
             valinnat[3] = "B";
-            kohta++;
             getQ5();
         });
     }
@@ -337,17 +325,7 @@ public class kysely extends Application{
             vboksi.getChildren().remove(pick5);
             vboksi.getChildren().remove(sivu6);
             valinnat[4] = "A";
-            kohta++;
-            try {
-                readToFile();
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
-            try {
-                getEnd();
-            } catch (IOException | ClassNotFoundException ex) {
-                throw new RuntimeException(ex);
-            }
+            getEnd();
         });
         //Question 5 Not that much (B)
         bntm.setOnAction(e -> {
@@ -356,54 +334,46 @@ public class kysely extends Application{
             vboksi.getChildren().remove(pick5);
             vboksi.getChildren().remove(sivu6);
             valinnat[4] = "B";
-            kohta++;
-            try {
-                readToFile();
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
-            try {
-                getEnd();
-            } catch (IOException | ClassNotFoundException ex) {
-                throw new RuntimeException(ex);
-            }
+            getEnd();
         });
     }
-    /** Lukee kayttajan antamat vastaukset tiedostoon.
-     * @throws IOException IOException
-     */
-    public void readToFile() throws IOException {
-        String tiedostonnimi = "valinnat.txt";
-        ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream(tiedostonnimi));
-        outputStream.writeObject(valinnat);
+    /** Tallettaa olion tiedot tiedostoon ja lukee ne sieltä.*/
+    public void tiedostonKasittely(){
+        kayttaja k2 = new kayttaja(k1.getNimi(),k1.getIka(), k1.getPetname());
+        try (ObjectOutputStream oliotiedosto = new ObjectOutputStream(new FileOutputStream("kayttajantiedot.dat"))){
+            oliotiedosto.writeObject(k2);
+        }catch (FileNotFoundException e){
+            System.err.println("Tiedosto ei löytynyt");
+        }catch (IOException e){
+            System.err.println("Tiedosto löytyi, mutta jokin meni pieleen. ");
+        }
+        try (ObjectInputStream oliotiedosto2 = new ObjectInputStream((new FileInputStream("kayttajantiedot.dat")))) {
+            k1 = (kayttaja) oliotiedosto2.readObject();
+        }catch (FileNotFoundException e){
+            System.err.println("Tiedostoa ei löytynyt.");
+        }catch (EOFException e){
+            System.err.println("Tiedostosta yritettiin lukea liikaa.");
+        }catch (IOException e){
+            System.err.println("Tiedosto löytyi, mutta jokin meni pieleen.");
+        }catch (ClassNotFoundException e){
+            System.err.println("Serialisoitua luokkaa ei löytynyt.");
+        }
+        System.out.println("Nimi: " + k1.getNimi() + "\nIkä: " + k1.getIka() + "\nNimiehdotus: " + k1.getPetname());
+
     }
-    /** Lukee tiedostossa olevan taulukon uuteen taulukkoon.
-     * @throws IOException IOException
-     * @throws ClassNotFoundException ClassNotFoundException
+    /**Muokkaa vboksia vastaamaan kayttajan antamia vastauksia ja palauttaa sen.
      */
-    public void readFromFile() throws IOException, ClassNotFoundException {
-        String tiedostonnimi = "valinnat.txt";
-        ObjectInputStream inputStream = new ObjectInputStream(new FileInputStream(tiedostonnimi));
-        finalvalinnat = (String[])inputStream.readObject();
-        System.out.println("Valinnat: " + Arrays.toString(finalvalinnat));
-    }
-    /** Tarkistaa, etta kaikki kysymykset on kayty lapi.
-     * Muokkaa vboksia vastaamaan kayttajan antamia vastauksia ja palauttaa sen.
-     * @throws IOException IOException
-     * @throws ClassNotFoundException ClassNotFoundException
-     */
-    public void getEnd() throws IOException, ClassNotFoundException {
+    public void getEnd() {
+        tiedostonKasittely();
         Text sivu7 = new Text(sivu++ + " / 7");
         Text bye = new Text("Have a good day " + k1.getNimi() + "!");
         Text goodidea = new Text("Are you sure " + k1.getPetname() + " is a good name option?");
         bye.setFont(fontti);
         goodidea.setFont(fontti);
-        if(kohta ==5) {
-            readFromFile();
             if (k1.getIka() >= 18) {
                 //Ending 1 big dog
-                if (Arrays.toString(finalvalinnat).equals("[B, A, A, A, A]") ||
-                        Arrays.toString(finalvalinnat).equals("[B, A, A, A, B]")) {
+                if (Arrays.toString(valinnat).equals("[B, A, A, A, A]") ||
+                        Arrays.toString(valinnat).equals("[B, A, A, A, B]")) {
                     Text e1Title = new Text("You could get a big dog breed");
                     e1Title.setFont(fontti);
                     HBox e1imagehbox = new HBox();
@@ -424,10 +394,10 @@ public class kysely extends Application{
                     vboksi.getChildren().add(sivu7);
                 }
                 //Ending 2 small dog
-                else if (Arrays.toString(finalvalinnat).equals("[A, A, A, A, A]") ||
-                        Arrays.toString(finalvalinnat).equals("[A, A, A, A, B]") ||
-                        Arrays.toString(finalvalinnat).equals("[A, A, A, B, A]") ||
-                        Arrays.toString(finalvalinnat).equals("[A, A, A, B, B]")) {
+                else if (Arrays.toString(valinnat).equals("[A, A, A, A, A]") ||
+                        Arrays.toString(valinnat).equals("[A, A, A, A, B]") ||
+                        Arrays.toString(valinnat).equals("[A, A, A, B, A]") ||
+                        Arrays.toString(valinnat).equals("[A, A, A, B, B]")) {
                     Text e2Title = new Text("You could get a small dog breed");
                     e2Title.setFont(fontti);
                     HBox e2imagehbox = new HBox();
@@ -448,10 +418,10 @@ public class kysely extends Application{
                     vboksi.getChildren().add(sivu7);
                 }
                 //Ending 3 cat
-                else if (Arrays.toString(finalvalinnat).equals("[A, A, B, A, A]") ||
-                        Arrays.toString(finalvalinnat).equals("[A, A, B, A, B]") ||
-                        Arrays.toString(finalvalinnat).equals("[A, A, B, B, A]") ||
-                        Arrays.toString(finalvalinnat).equals("[A, A, B, B, B]")) {
+                else if (Arrays.toString(valinnat).equals("[A, A, B, A, A]") ||
+                        Arrays.toString(valinnat).equals("[A, A, B, A, B]") ||
+                        Arrays.toString(valinnat).equals("[A, A, B, B, A]") ||
+                        Arrays.toString(valinnat).equals("[A, A, B, B, B]")) {
                     Text e3Title = new Text("You could get a cat");
                     e3Title.setFont(fontti);
                     HBox e3imagehbox = new HBox();
@@ -472,12 +442,12 @@ public class kysely extends Application{
                     vboksi.getChildren().add(sivu7);
                 }
                 //Ending 4 fish/hamster
-                else if (Arrays.toString(finalvalinnat).equals("[A, B, A, A, A]") ||
-                        Arrays.toString(finalvalinnat).equals("[A, B, A, B, A]") ||
-                        Arrays.toString(finalvalinnat).equals("[A, B, B, A, A]") ||
-                        Arrays.toString(finalvalinnat).equals("[A, B, B, B, A]") ||
-                        Arrays.toString(finalvalinnat).equals("[B, B, B, A, A]") ||
-                        Arrays.toString(finalvalinnat).equals("[B, B, B, B, A]")) {
+                else if (Arrays.toString(valinnat).equals("[A, B, A, A, A]") ||
+                        Arrays.toString(valinnat).equals("[A, B, A, B, A]") ||
+                        Arrays.toString(valinnat).equals("[A, B, B, A, A]") ||
+                        Arrays.toString(valinnat).equals("[A, B, B, B, A]") ||
+                        Arrays.toString(valinnat).equals("[B, B, B, A, A]") ||
+                        Arrays.toString(valinnat).equals("[B, B, B, B, A]")) {
                     Text e4Title = new Text("You could get fish or a hamster \n depending on your preference");
                     e4Title.setFont(fontti);
                     HBox e4imagehbox = new HBox();
@@ -498,12 +468,12 @@ public class kysely extends Application{
                     vboksi.getChildren().add(sivu7);
                 }
                 //Ending 5 Maine Coon / Savannah
-                else if (Arrays.toString(finalvalinnat).equals("[B, A, A, B, A]") ||
-                        Arrays.toString(finalvalinnat).equals("[B, A, A, B, B]") ||
-                        Arrays.toString(finalvalinnat).equals("[B, A, B, A, A]") ||
-                        Arrays.toString(finalvalinnat).equals("[B, A, B, A, B]") ||
-                        Arrays.toString(finalvalinnat).equals("[B, A, B, B, A]") ||
-                        Arrays.toString(finalvalinnat).equals("[B, A, B, B, B]")) {
+                else if (Arrays.toString(valinnat).equals("[B, A, A, B, A]") ||
+                        Arrays.toString(valinnat).equals("[B, A, A, B, B]") ||
+                        Arrays.toString(valinnat).equals("[B, A, B, A, A]") ||
+                        Arrays.toString(valinnat).equals("[B, A, B, A, B]") ||
+                        Arrays.toString(valinnat).equals("[B, A, B, B, A]") ||
+                        Arrays.toString(valinnat).equals("[B, A, B, B, B]")) {
                     Text e5Title = new Text("You could get a Maine Coon or a Savannah");
                     e5Title.setFont(fontti);
                     HBox e5imagehbox = new HBox();
@@ -524,9 +494,9 @@ public class kysely extends Application{
                     vboksi.getChildren().add(sivu7);
                 }
                 //Ending 6 Snake
-                else if (Arrays.toString(finalvalinnat).equals("[A, B, A, A, B]") ||
-                        Arrays.toString(finalvalinnat).equals("[A, B, B, A, B]") ||
-                        Arrays.toString(finalvalinnat).equals("[B, B, B, A, B]")) {
+                else if (Arrays.toString(valinnat).equals("[A, B, A, A, B]") ||
+                        Arrays.toString(valinnat).equals("[A, B, B, A, B]") ||
+                        Arrays.toString(valinnat).equals("[B, B, B, A, B]")) {
                     Text e6Title = new Text("You could get a snake");
                     e6Title.setFont(fontti);
                     HBox e6imagehbox = new HBox();
@@ -547,9 +517,9 @@ public class kysely extends Application{
                     vboksi.getChildren().add(sivu7);
                 }
                 //Ending 7 Leopard Gecko
-                else if (Arrays.toString(finalvalinnat).equals("[A, B, A, B, B]") ||
-                        Arrays.toString(finalvalinnat).equals("[A, B, B, B, B]") ||
-                        Arrays.toString(finalvalinnat).equals("[B, B, B, B, B]")) {
+                else if (Arrays.toString(valinnat).equals("[A, B, A, B, B]") ||
+                        Arrays.toString(valinnat).equals("[A, B, B, B, B]") ||
+                        Arrays.toString(valinnat).equals("[B, B, B, B, B]")) {
                     Text e7Title = new Text("You could get a Leopard Gecko");
                     e7Title.setFont(fontti);
                     HBox e7imagehbox = new HBox();
@@ -570,10 +540,10 @@ public class kysely extends Application{
                     vboksi.getChildren().add(sivu7);
                 }
                 //Ending 8 Chickens
-                else if (Arrays.toString(finalvalinnat).equals("[B, B, A, A, A]") ||
-                        Arrays.toString(finalvalinnat).equals("[B, B, A, A, B]") ||
-                        Arrays.toString(finalvalinnat).equals("[B, B, A, B, A]") ||
-                        Arrays.toString(finalvalinnat).equals("[B, B, A, B, B]")) {
+                else if (Arrays.toString(valinnat).equals("[B, B, A, A, A]") ||
+                        Arrays.toString(valinnat).equals("[B, B, A, A, B]") ||
+                        Arrays.toString(valinnat).equals("[B, B, A, B, A]") ||
+                        Arrays.toString(valinnat).equals("[B, B, A, B, B]")) {
                     Text e8Title = new Text("You could get chickens");
                     e8Title.setFont(fontti);
                     HBox e8imagehbox = new HBox();
@@ -607,13 +577,9 @@ public class kysely extends Application{
                 vboksi.getChildren().add(sivu7);
 
             }
-        }
-        else{
-            System.out.println("Error with question amount");
-        }
     }
     /** Ajaa ohjelman
-     * @param args String[]
+     * @param args kutsuparametreja ei kayteta
      * */
     public static void main(String[] args) {
         launch();
